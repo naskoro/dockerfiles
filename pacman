@@ -1,0 +1,4 @@
+#!/bin/sh
+PACMAN='pacman --noconfirm --noprogressbar'
+$PACMAN $@
+rm -rf /var/cache/pacman/pkg/*
