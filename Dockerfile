@@ -28,5 +28,5 @@ ADD supervisord.conf /etc/supervisord.conf
 RUN rm -rf /pkgs /var/cache/pacman/pkg/*
 
 EXPOSE 22
-VOLUME /var/log/supervisord
+VOLUME /var/log/supervisor
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]
