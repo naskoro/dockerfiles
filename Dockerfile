@@ -10,6 +10,8 @@ RUN $PACMAN -Sy \
 ADD pkgs /pkgs
 RUN $PACMAN -U /pkgs/vim*
 
+RUN rm -rf /pkgs /var/cache/pacman/pkg/*
+
 RUN cd /home/ && git clone https://github.com/naspeh/dotfiles.git
 RUN sudo /home/dotfiles/manage.py init --boot zsh bin vim dev
 
@@ -24,8 +26,6 @@ RUN sed -i \
     /etc/ssh/sshd_config
 
 ADD supervisord.conf /etc/supervisord.conf
-
-RUN rm -rf /pkgs /var/cache/pacman/pkg/*
 
 EXPOSE 22
 VOLUME /var/log/supervisor
