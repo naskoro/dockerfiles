@@ -17,4 +17,4 @@ RUN chsh -s /bin/zsh
 ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 TERM=xterm
 RUN locale-gen $LC_ALL
 
-CMD /bin/zsh
+CMD ["/bin/zsh"]
