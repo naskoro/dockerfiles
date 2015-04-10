@@ -42,6 +42,12 @@ def main(argv=None):
         return p
 
     cmd('base').exe(lambda a: build_base())
+    cmd('build').exe(lambda a: subprocess.call(
+        'cat ~/.ssh/id_rsa.pub > authorized_keys'
+        '&& cat /etc/pacman.d/mirrorlist > mirrorlist'
+        '&& docker build -t dev .',
+        shell=True
+    ))
 
     args = parser.parse_args(argv)
     if not hasattr(args, 'exe'):
