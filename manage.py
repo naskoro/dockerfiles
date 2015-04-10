@@ -42,11 +42,11 @@ def main(argv=None):
         return p
 
     cmd('base').exe(lambda a: build_base())
-    cmd('build').exe(lambda a: subprocess.call(
+    cmd('dev').exe(lambda a: subprocess.call(
         'cat ~/.ssh/id_rsa.pub > authorized_keys'
         '&& cat /etc/pacman.d/mirrorlist > mirrorlist'
         '&& docker build -t dev .',
-        shell=True
+        cwd=str(root / 'dev'), shell=True
     ))
 
     args = parser.parse_args(argv)
