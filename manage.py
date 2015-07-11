@@ -1,12 +1,20 @@
 #!/usr/bin/env python
 import argparse
 import re
-import subprocess
 from pathlib import Path
+from subprocess import call
 
 import requests
 
 root = Path(__file__).parent
+
+
+def sh(cmd, **kwargs):
+    print(cmd)
+    code = call(cmd, shell=True, **kwargs)
+    if code:
+        raise SystemExit(code)
+    return 0
 
 
 def build_base():
@@ -27,7 +35,7 @@ def build_base():
         with (cwd / name).open('bw') as f:
             f.write(body.encode())
 
-    subprocess.call('sudo ./mkimage-arch.sh', cwd=str(cwd), shell=True)
+    sh('sudo ./mkimage-arch.sh', cwd=str(cwd))
 
 
 def main(argv=None):
@@ -42,11 +50,15 @@ def main(argv=None):
         return p
 
     cmd('base').exe(lambda a: build_base())
-    cmd('dev').exe(lambda a: subprocess.call(
+    cmd('sshd').exe(lambda a: sh(
+        'docker build -t naspeh/sshd .',
+        cwd=str(root / 'sshd')
+    ))
+    cmd('dev').exe(lambda a: sh(
         'cat ~/.ssh/id_rsa.pub > authorized_keys'
         '&& cat /etc/pacman.d/mirrorlist > mirrorlist'
         '&& docker build -t dev .',
-        cwd=str(root / 'dev'), shell=True
+        cwd=str(root / 'dev')
     ))
 
     args = parser.parse_args(argv)

@@ -1,0 +1,3 @@
+#!/bin/sh
+pacman --noconfirm $@
+rm -rf /var/cache/pacman/pkg/*
