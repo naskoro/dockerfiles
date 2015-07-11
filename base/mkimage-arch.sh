@@ -14,6 +14,8 @@ hash expect &>/dev/null || {
 	exit 1
 }
 
+export LANG="C.UTF-8"
+
 ROOTFS=$(mktemp -d ${TMPDIR:-/var/tmp}/rootfs-archlinux-XXXXXXXXXX)
 chmod 755 $ROOTFS
 
@@ -90,5 +92,5 @@ tar --numeric-owner --xattrs --acls -C $ROOTFS -c . | docker import - archlinux
 docker run -t --rm archlinux echo Success.
 rm -rf $ROOTFS
 
-docker tag archlinux:latest naspeh/base
+docker tag -f archlinux:latest naspeh/base
 docker rmi archlinux:latest

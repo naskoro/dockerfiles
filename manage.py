@@ -21,7 +21,7 @@ def build_base():
                 body
             )
             body += (
-                '\ndocker tag archlinux:latest naspeh/base'
+                '\ndocker tag -f archlinux:latest naspeh/base'
                 '\ndocker rmi archlinux:latest'
             )
         with (cwd / name).open('bw') as f:
