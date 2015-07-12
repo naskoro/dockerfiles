@@ -5,7 +5,7 @@ ADD pacman-wrap /usr/local/bin/
 ADD mirrorlist /etc/pacman.d/mirrorlist
 
 RUN pacman-wrap -Syy \
-    sudo zsh git openssh \
+    sudo zsh git openssh nginx \
     supervisor python python2
 
 ADD pkgs /pkgs
@@ -25,5 +25,6 @@ RUN sed -i \
     /etc/ssh/sshd_config
 RUN ssh-keygen -q -t rsa -N '' -f /root/.ssh/id_rsa
 
-ADD supervisord.conf /etc/supervisord.conf
+ADD nginx.conf /etc/nginx/
+ADD supervisord.conf /etc/
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]
