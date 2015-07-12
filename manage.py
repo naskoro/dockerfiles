@@ -50,9 +50,9 @@ def main(argv=None):
         return p
 
     cmd('base').exe(lambda a: build_base())
-    cmd('sshd').exe(lambda a: sh(
-        'docker build -t naspeh/sshd .',
-        cwd=str(root / 'sshd')
+    cmd('web').exe(lambda a: sh(
+        'docker build -t naspeh/web .',
+        cwd=str(root / 'web')
     ))
     cmd('dev').exe(lambda a: sh(
         'cat ~/.ssh/id_rsa.pub > authorized_keys'
