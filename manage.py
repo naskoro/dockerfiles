@@ -6,7 +6,7 @@ from subprocess import call
 
 import requests
 
-root = Path(__file__).parent
+root = Path(__file__).parent.absolute()
 
 
 def sh(cmd, **kwargs):
@@ -15,6 +15,10 @@ def sh(cmd, **kwargs):
     if code:
         raise SystemExit(code)
     return 0
+
+
+def ssh(cmd, **kw):
+    return sh('ssh root@localhost -p2200 "%s"' % cmd.replace('"', '\\"'), **kw)
 
 
 def build_base():
@@ -38,6 +42,43 @@ def build_base():
     sh('sudo ./mkimage-arch.sh', cwd=str(cwd))
 
 
+def build_web(init=False, commit=False):
+    cwd = str(root / 'web')
+    if init:
+        sh(
+            'docker stop web; docker rm web;'
+            'docker run -d --net=host --name=web -v {cwd}:/files naspeh/sshd;'
+            'sleep 5'
+            .format(cwd=cwd), cwd=cwd
+        )
+
+    ssh(
+        '{pacman} -Sy'
+        '   sudo zsh git rsync python python2'
+        '   openssh nginx supervisor'
+        '&&'
+        '{pacman} -U /files/pkgs/* &&'
+        'rm -rf /var/cache/pacman/pkg/* &&'
+        'rsync -v /files/mirrorlist /etc/ &&'
+        'rsync -v /files/nginx.conf /etc/nginx/ &&'
+        'rsync -v /files/supervisord.conf /etc/ &&'
+        'chsh -s /bin/zsh &&'
+        'sed -i '
+        '   -e "s/^#*\(PermitRootLogin\) .*/\\1 yes/"'
+        '   -e "s/^#*\(PasswordAuthentication\\) .*/\\1 no/"'
+        '   -e "s/^#*\(PermitEmptyPasswords\) .*/\\1 no/"'
+        '   -e "s/^#*\(UsePAM\) .*/\\1 no/"'
+        '   -e "s/^#*\(Port\) .*/\\1 2200/"'
+        '   /etc/ssh/sshd_config'
+        .format(pacman='pacman --noconfirm'), cwd=cwd
+    )
+    if commit:
+        sh(
+            'docker commit web naspeh/web &&'
+            'docker stop web && docker rm web'
+        )
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     cmds = parser.add_subparsers(help='commands')
@@ -50,10 +91,14 @@ def main(argv=None):
         return p
 
     cmd('base').exe(lambda a: build_base())
-    cmd('web').exe(lambda a: sh(
-        'docker build -t naspeh/web .',
-        cwd=str(root / 'web')
+    cmd('sshd').exe(lambda a: sh(
+        'docker build -t naspeh/sshd .',
+        cwd=str(root / 'sshd')
     ))
+    cmd('web')\
+        .arg('-i', '--init', action='store_true')\
+        .arg('-c', '--commit', action='store_true')\
+        .exe(lambda a: build_web(a.init, a.commit))
     cmd('dev').exe(lambda a: sh(
         'cat ~/.ssh/id_rsa.pub > authorized_keys'
         '&& cat /etc/pacman.d/mirrorlist > mirrorlist'
