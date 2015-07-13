@@ -47,7 +47,7 @@ def build_web(init=False, commit=False):
     if init:
         sh(
             'docker stop web; docker rm web;'
-            'docker run -d --net=host --name=web -v {cwd}:/files naspeh/sshd;'
+            'docker run -d --net=host --name=web -v {cwd}:/mnt naspeh/sshd;'
             'sleep 5'
             .format(cwd=cwd), cwd=cwd
         )
@@ -57,11 +57,11 @@ def build_web(init=False, commit=False):
         '   sudo zsh git rsync python python2'
         '   openssh nginx supervisor'
         '&&'
-        '{pacman} -U /files/pkgs/* &&'
+        '{pacman} -U /mnt/pkgs/* &&'
         'rm -rf /var/cache/pacman/pkg/* &&'
-        'rsync -v /files/mirrorlist /etc/ &&'
-        'rsync -v /files/nginx.conf /etc/nginx/ &&'
-        'rsync -v /files/supervisord.conf /etc/ &&'
+        'rsync -v /mnt/mirrorlist /etc/ &&'
+        'rsync -v /mnt/nginx.conf /etc/nginx/ &&'
+        'rsync -v /mnt/supervisord.conf /etc/ &&'
         'chsh -s /bin/zsh &&'
         'sed -i '
         '   -e "s/^#*\(PermitRootLogin\) .*/\\1 yes/"'
