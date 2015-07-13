@@ -115,12 +115,6 @@ def main(argv=None):
         .arg('-c', '--commit', action='store_true')\
         .arg('-r', '--clear', action='store_true')\
         .exe(lambda a: build_web(a.init, a.commit, a.clear))
-    cmd('dev').exe(lambda a: sh(
-        'cat ~/.ssh/id_rsa.pub > authorized_keys'
-        '&& cat /etc/pacman.d/mirrorlist > mirrorlist'
-        '&& docker build -t dev .',
-        cwd=str(root / 'dev')
-    ))
 
     args = parser.parse_args(argv)
     if not hasattr(args, 'exe'):
