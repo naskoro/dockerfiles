@@ -1,0 +1,4 @@
+!stdout(true),mail(false)
+
+### logrotate
+00 06 * * * /bin/logrotate /etc/logrotate.conf
