@@ -62,16 +62,18 @@ def build_web(init=False, commit=False, clear=False):
     sh(cmd, cwd=cwd)
 
     ssh(
+        'rsync -v {mnt}/mirrorlist /etc/ &&'
         '{pacman} -Sy'
         '   sudo zsh git rsync python python2'
         '   openssh nginx supervisor fcron logrotate'
         '&&'
         '{pacman} -U {mnt}/pkgs/* &&'
-        'rsync -v {mnt}/mirrorlist /etc/ &&'
         'rsync -v {mnt}/nginx.conf /etc/nginx/ &&'
         'rsync -v {mnt}/supervisord.conf /etc/ &&'
         'rsync -v {mnt}/logrotate.conf /etc/ &&'
-        'rsync -v {mnt}/fcrontab /etc/fcrontab/ &&'
+        '([ -d /etc/fcrontab ] || mkdir /etc/fcrontab) &&'
+        'rsync -vr {mnt}/fcrontab /etc/fcrontab/00-default &&'
+        'cat /etc/fcrontab/* | fcrontab - &&'
         'chsh -s /bin/zsh &&'
         'sed -i '
         '   -e "s/^#*\(PermitRootLogin\) .*/\\1 yes/"'
@@ -80,8 +82,6 @@ def build_web(init=False, commit=False, clear=False):
         '   -e "s/^#*\(UsePAM\) .*/\\1 no/"'
         '   -e "s/^#*\(Port\) .*/\\1 2200/"'
         '   /etc/ssh/sshd_config'
-        '&&'
-        'cat /etc/fcrontab/* | fcrontab -'
         .format(pacman='pacman --noconfirm', mnt=mnt), cwd=cwd
     )
     if clear or commit:

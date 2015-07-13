@@ -1,6 +1,11 @@
 # Base image for web
 
-Has supervisor, sshd and nginx.
+### Installed & configured packages:
+- supervisor
+- sshd
+- nginx
+- fcron
+- logrotate
 
 **NB:** Required `authorized_keys` to login over ssh
 
