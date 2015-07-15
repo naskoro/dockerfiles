@@ -1,21 +1,24 @@
 # Docker images for various targets
 
 ## "Base" - clean archlinx image
+Build command: `./manage.py base`
+
 Just clean archlinux image based [docker/contrib/mkimage-arch.sh][mkimage].
 
 [mkimage]: https://github.com/docker/docker/blob/master/contrib/mkimage-arch.sh
 
-Build command: `./manage.py base`
-
 
 ## "Sshd" - base image with sshd
+Build command: `./manage.py sshd`
+
 Minimal image with `supervisor` and `sshd`.
 
 Login over ssh with **root** user and **no password**.
 
-Build command: `./manage.py sshd`
 
 ## "Web" - base image for web
+Build command: `./manage.py web`
+
 ### Installed & configured packages:
 - supervisor
 - sshd
@@ -24,8 +27,6 @@ Build command: `./manage.py sshd`
 - logrotate
 
 **NB:** Required `authorized_keys` to login over ssh
-
-Build command: `./manage.py web`
 
 ### Usage in Dockerfile
 ```dockerfile
