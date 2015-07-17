@@ -71,6 +71,7 @@ def build_web(init=False, commit=False, clear=False):
         'rsync -v {mnt}/nginx.conf /etc/nginx/ &&'
         'rsync -v {mnt}/supervisord.conf /etc/ &&'
         'rsync -v {mnt}/logrotate.conf /etc/ &&'
+        'rsync -v {mnt}/locale.conf /etc/ &&'
         '([ -d /etc/fcrontab ] || mkdir /etc/fcrontab) &&'
         'rsync -vr {mnt}/fcrontab /etc/fcrontab/00-default &&'
         'cat /etc/fcrontab/* | fcrontab - &&'
