@@ -1,4 +1,7 @@
 !stdout(true),mail(false)
 
+LANG=en_US.UTF-8
+LC_ALL=en_US.UTF-8
+
 ### logrotate
 00 06 * * * /bin/logrotate /etc/logrotate.conf
