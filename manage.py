@@ -81,9 +81,9 @@ def build_web(init=False, commit=False, clear=False):
         '   -e "s/^#*\(PasswordAuthentication\\) .*/\\1 no/"'
         '   -e "s/^#*\(PermitEmptyPasswords\) .*/\\1 no/"'
         '   -e "s/^#*\(UsePAM\) .*/\\1 no/"'
-        '   -e "s/^#*\(Port\) .*/\\1 2200/"'
+        '   -e "s/^#*\(Port\) .*/\\1 {port}/"'
         '   /etc/ssh/sshd_config'
-        .format(pacman='pacman --noconfirm', mnt=mnt), cwd=cwd
+        .format(pacman='pacman --noconfirm', mnt=mnt, port=port), cwd=cwd
     )
     if clear or commit:
         ssh('rm -rf /var/cache/pacman/pkg/*')
