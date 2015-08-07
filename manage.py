@@ -62,7 +62,7 @@ def build_web(init=False, commit=False, clear=False):
     sh(cmd, cwd=cwd)
 
     ssh(
-        'rsync -v {mnt}/mirrorlist /etc/ &&'
+        'cp {mnt}/mirrorlist /etc/pacman.d/ &&'
         '{pacman} -Sy'
         '   sudo zsh git rsync python python2'
         '   openssh nginx supervisor fcron logrotate'
