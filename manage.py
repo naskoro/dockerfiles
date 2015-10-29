@@ -60,16 +60,36 @@ def init(name, image):
 
 
 def commit(name):
+    ssh(
+        'rm -rf /var/cache/pacman/pkg/* &&'
+        'rm -rf /root/.ssh/authorized_keys &&'
+        'sed -i '
+        '   -e "s/^#*\(PermitRootLogin\) .*/\\1 yes/"'
+        '   -e "s/^#*\(PasswordAuthentication\\) .*/\\1 yes/"'
+        '   -e "s/^#*\(PermitEmptyPasswords\) .*/\\1 yes/"'
+        '   /etc/ssh/sshd_config'
+    )
     sh(
-        'docker exec -i {name} rm -rf /var/cache/pacman/pkg/* &&'
         'docker commit {name} naspeh/{name} &&'
         'docker stop {name} && docker rm {name}'
         .format(name=name)
     )
 
 
-def keys():
-    sh(
+def general(dot=False):
+    if dot:
+        ssh(
+            'pacman --noconfirm -Sy python-requests &&'
+            '([ -d {path} ] || mkdir {path}) &&'
+            'cd {path} &&'
+            '([ -d .git ] ||'
+            '   git clone https://github.com/naspeh/dotfiles.git .'
+            ') &&'
+            'git pull && ./manage.py init --boot vim zsh bin'
+            .format(path='/home/dotfiles')
+        )
+
+    ssh(
         '([ -f /root/.ssh/authorized_keys ] || ('
         '   echo "no authorized_keys" && exit 1'
         ')) &&'
@@ -78,13 +98,12 @@ def keys():
         '   -e "s/^#*\(PasswordAuthentication\\) .*/\\1 no/"'
         '   -e "s/^#*\(PermitEmptyPasswords\) .*/\\1 no/"'
         '   -e "s/^#*\(UsePAM\) .*/\\1 no/"'
-        '   -e "s/^#*\(Port\) .*/\\1 {port}/"'
         '   /etc/ssh/sshd_config'
     )
 
 
-def build_web(dot=False, inner=False):
-    cmd = (
+def build_web():
+    ssh(
         'cp {mnt}/mirrorlist /etc/pacman.d/ &&'
         'pacman --noconfirm -Sy'
         '   sudo zsh git rsync vim-python3 python'
@@ -97,21 +116,9 @@ def build_web(dot=False, inner=False):
         '([ -d /etc/fcrontab ] || mkdir /etc/fcrontab) &&'
         'rsync -vr {mnt}/fcrontab /etc/fcrontab/00-default &&'
         'cat /etc/fcrontab/* | fcrontab - &&'
-        'chsh -s /bin/zsh'
-        .format(mnt=src / 'web', port=port)
+        'chsh -s /bin/zsh &&'
+        .format(mnt=src / 'web')
     )
-    if dot:
-        cmd += (
-            'pacman --noconfirm -Sy python-requests &&'
-            '([ -d {path} ] || mkdir {path}) &&'
-            'cd {path} &&'
-            '([ -d .git ] ||'
-            '   git clone https://github.com/naspeh/dotfiles.git .'
-            ') &&'
-            'git pull && ./manage.py init --boot vim zsh bin'
-            .format(path='/home/dotfiles')
-        )
-    (sh if inner else ssh)(cmd)
 
 
 def main(argv=None):
@@ -131,8 +138,7 @@ def main(argv=None):
         cwd=str(root / 'sshd')
     ))
     cmd('web')\
-        .arg('-d', '--dot', action='store_true')\
-        .exe(lambda a: build_web(a.dot))
+        .exe(lambda a: build_web())
     cmd('init')\
         .arg('-i', '--image', default='naspeh/sshd')\
         .arg('-n', '--name', default='web')\
@@ -140,8 +146,9 @@ def main(argv=None):
     cmd('commit')\
         .arg('-n', '--name', default='web')\
         .exe(lambda a: commit(a.name))
-    cmd('keys')\
-        .exe(lambda a: keys())
+    cmd('general')\
+        .arg('-d', '--dot', action='store_true')\
+        .exe(lambda a: general(a.dot))
 
     args = parser.parse_args(argv)
     if not hasattr(args, 'exe'):
