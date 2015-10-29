@@ -4,9 +4,9 @@ import re
 from pathlib import Path
 from subprocess import call
 
-import requests
 
 root = Path(__file__).parent.absolute()
+src = Path('/home/dockerfiles/')
 host = 'root@localhost'
 port = '2200'
 
@@ -26,6 +26,8 @@ def ssh(cmd, **kw):
 
 
 def build_base():
+    import requests
+
     cwd = root / 'base'
     url = 'https://raw.githubusercontent.com/dotcloud/docker/master/contrib/'
     for name in ('mkimage-arch.sh', 'mkimage-arch-pacman.conf'):
@@ -46,36 +48,31 @@ def build_base():
     sh('sudo ./mkimage-arch.sh', cwd=str(cwd))
 
 
-def build_web(init=False, commit=False, clear=False):
-    cwd = str(root / 'web')
-    mnt = '/tmp/web'
-
-    cmd = (
-        'docker stop web; docker rm web;'
-        'docker run -d --net=host --name=web -v {cwd}:{mnt} naspeh/sshd;'
-        'sleep 5'
-        .format(cwd=cwd, mnt=mnt)
-    ) if init else (
-        'rsync -e "ssh -p{port}" -rv --delete ./ {host}:{mnt}/'
-        .format(mnt=mnt, host=host, port=port)
+def init(name, image):
+    sh(
+        'docker stop {name}; docker rm {name};'
+        'docker run -d --net=host --name=web {image} &&'
+        'sleep 5 &&'
+        'scp -P{port} -r ./ {host}:{src}/'
+        .format(src=src, host=host, port=port, name=name, image=image),
+        cwd=str(root)
     )
-    sh(cmd, cwd=cwd)
 
-    ssh(
-        'cp {mnt}/mirrorlist /etc/pacman.d/ &&'
-        '{pacman} -Sy'
-        '   sudo zsh git rsync python python2'
-        '   openssh nginx supervisor fcron logrotate'
-        '&&'
-        '{pacman} -U {mnt}/pkgs/* &&'
-        'rsync -v {mnt}/nginx.conf /etc/nginx/ &&'
-        'rsync -v {mnt}/supervisord.conf /etc/ &&'
-        'rsync -v {mnt}/logrotate.conf /etc/ &&'
-        'rsync -v {mnt}/locale.conf /etc/ &&'
-        '([ -d /etc/fcrontab ] || mkdir /etc/fcrontab) &&'
-        'rsync -vr {mnt}/fcrontab /etc/fcrontab/00-default &&'
-        'cat /etc/fcrontab/* | fcrontab - &&'
-        'chsh -s /bin/zsh &&'
+
+def commit(name):
+    sh(
+        'docker exec -i {name} rm -rf /var/cache/pacman/pkg/* &&'
+        'docker commit {name} naspeh/{name} &&'
+        'docker stop {name} && docker rm {name}'
+        .format(name=name)
+    )
+
+
+def keys():
+    sh(
+        '([ -f /root/.ssh/authorized_keys ] || ('
+        '   echo "no authorized_keys" && exit 1'
+        ')) &&'
         'sed -i '
         '   -e "s/^#*\(PermitRootLogin\) .*/\\1 yes/"'
         '   -e "s/^#*\(PasswordAuthentication\\) .*/\\1 no/"'
@@ -83,16 +80,38 @@ def build_web(init=False, commit=False, clear=False):
         '   -e "s/^#*\(UsePAM\) .*/\\1 no/"'
         '   -e "s/^#*\(Port\) .*/\\1 {port}/"'
         '   /etc/ssh/sshd_config'
-        .format(pacman='pacman --noconfirm', mnt=mnt, port=port), cwd=cwd
     )
-    if clear or commit:
-        ssh('rm -rf /var/cache/pacman/pkg/*')
 
-    if commit:
-        sh(
-            'docker commit web naspeh/web &&'
-            'docker stop web && docker rm web'
+
+def build_web(dot=False, inner=False):
+    cmd = (
+        'cp {mnt}/mirrorlist /etc/pacman.d/ &&'
+        'pacman --noconfirm -Sy'
+        '   sudo zsh git rsync vim-python3 python'
+        '   openssh nginx supervisor fcron logrotate'
+        '&&'
+        'rsync -v {mnt}/nginx.conf /etc/nginx/ &&'
+        'rsync -v {mnt}/supervisord.conf /etc/ &&'
+        'rsync -v {mnt}/logrotate.conf /etc/ &&'
+        'rsync -v {mnt}/locale.conf /etc/ &&'
+        '([ -d /etc/fcrontab ] || mkdir /etc/fcrontab) &&'
+        'rsync -vr {mnt}/fcrontab /etc/fcrontab/00-default &&'
+        'cat /etc/fcrontab/* | fcrontab - &&'
+        'chsh -s /bin/zsh'
+        .format(mnt=src / 'web', port=port)
+    )
+    if dot:
+        cmd += (
+            'pacman --noconfirm -Sy python-requests &&'
+            '([ -d {path} ] || mkdir {path}) &&'
+            'cd {path} &&'
+            '([ -d .git ] ||'
+            '   git clone https://github.com/naspeh/dotfiles.git .'
+            ') &&'
+            'git pull && ./manage.py init --boot vim zsh bin'
+            .format(path='/home/dotfiles')
         )
+    (sh if inner else ssh)(cmd)
 
 
 def main(argv=None):
@@ -112,10 +131,17 @@ def main(argv=None):
         cwd=str(root / 'sshd')
     ))
     cmd('web')\
-        .arg('-i', '--init', action='store_true')\
-        .arg('-c', '--commit', action='store_true')\
-        .arg('-r', '--clear', action='store_true')\
-        .exe(lambda a: build_web(a.init, a.commit, a.clear))
+        .arg('-d', '--dot', action='store_true')\
+        .exe(lambda a: build_web(a.dot))
+    cmd('init')\
+        .arg('-i', '--image', default='naspeh/sshd')\
+        .arg('-n', '--name', default='web')\
+        .exe(lambda a: init(a.name, a.image))
+    cmd('commit')\
+        .arg('-n', '--name', default='web')\
+        .exe(lambda a: commit(a.name))
+    cmd('keys')\
+        .exe(lambda a: keys())
 
     args = parser.parse_args(argv)
     if not hasattr(args, 'exe'):
