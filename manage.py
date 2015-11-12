@@ -61,8 +61,8 @@ def init(name, image):
 
 def commit(name):
     ssh(
-        'rm -rf /var/cache/pacman/pkg/* &&'
-        'rm -rf /root/.ssh/authorized_keys &&'
+        'rm -rf /var/cache/pacman/pkg/*;'
+        'rm -rf /root/.ssh/authorized_keys;'
         'sed -i '
         '   -e "s/^#*\(PermitRootLogin\) .*/\\1 yes/"'
         '   -e "s/^#*\(PasswordAuthentication\\) .*/\\1 yes/"'
