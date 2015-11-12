@@ -117,7 +117,7 @@ def build_web():
     ssh(
         'cp {mnt}/mirrorlist /etc/pacman.d/ &&'
         'pacman --noconfirm -Sy'
-        '   sudo zsh git rsync vim-python3 python'
+        '   zsh git rsync vim-python3 python'
         '   openssh nginx supervisor fcron logrotate'
         '&&'
         'rsync -v {mnt}/nginx.conf /etc/nginx/ &&'
