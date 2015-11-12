@@ -127,7 +127,7 @@ def build_web():
         '([ -d /etc/fcrontab ] || mkdir /etc/fcrontab) &&'
         'rsync -vr {mnt}/fcrontab /etc/fcrontab/00-default &&'
         'cat /etc/fcrontab/* | fcrontab - &&'
-        'chsh -s /bin/zsh &&'
+        'chsh -s /bin/zsh'
         .format(mnt=src / 'web')
     )
 
