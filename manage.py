@@ -76,8 +76,18 @@ def commit(name):
     )
 
 
-def general(local=False, dot=False):
+def general(local=False, dot=False, keys=''):
     run = sh if local else ssh
+    if keys:
+        run(
+            'rm ~/.ssh/* &&'
+            'ssh-keygen -A &&'
+            'ssh-keygen -q -t rsa -N "" -f /root/.ssh/id_rsa &&'
+            'rsync -v {keys} /root/.ssh/authorized_keys &&'
+            'cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys'
+            .format(keys=keys)
+        )
+
     if dot:
         run(
             'pacman --noconfirm -Sy python-requests &&'
@@ -150,7 +160,8 @@ def main(argv=None):
     cmd('general')\
         .arg('-d', '--dot', action='store_true')\
         .arg('-l', '--local', action='store_true')\
-        .exe(lambda a: general(a.local, a.dot))
+        .arg('-k', '--keys', help='path to authorized_keys')\
+        .exe(lambda a: general(a.local, a.dot, a.keys))
 
     args = parser.parse_args(argv)
     if not hasattr(args, 'exe'):
