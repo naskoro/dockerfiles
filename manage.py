@@ -76,9 +76,10 @@ def commit(name):
     )
 
 
-def general(dot=False):
+def general(local=False, dot=False):
+    run = sh if local else ssh
     if dot:
-        ssh(
+        run(
             'pacman --noconfirm -Sy python-requests &&'
             '([ -d {path} ] || mkdir {path}) &&'
             'cd {path} &&'
@@ -89,7 +90,7 @@ def general(dot=False):
             .format(path='/home/dotfiles')
         )
 
-    ssh(
+    run(
         '([ -f /root/.ssh/authorized_keys ] || ('
         '   echo "no authorized_keys" && exit 1'
         ')) &&'
@@ -148,7 +149,8 @@ def main(argv=None):
         .exe(lambda a: commit(a.name))
     cmd('general')\
         .arg('-d', '--dot', action='store_true')\
-        .exe(lambda a: general(a.dot))
+        .arg('-l', '--local', action='store_true')\
+        .exe(lambda a: general(a.local, a.dot))
 
     args = parser.parse_args(argv)
     if not hasattr(args, 'exe'):
