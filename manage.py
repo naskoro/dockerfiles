@@ -80,7 +80,8 @@ def general(local=False, dot=False, keys=''):
     run = sh if local else ssh
     if keys:
         run(
-            'rm ~/.ssh/* &&'
+            'rm ~/.ssh/*;'
+            'rm /etc/ssh/ssh_host_*;'
             'ssh-keygen -A &&'
             'ssh-keygen -q -t rsa -N "" -f /root/.ssh/id_rsa &&'
             'rsync -v {keys} /root/.ssh/authorized_keys &&'
