@@ -9,6 +9,7 @@ root = Path(__file__).parent.absolute()
 src = Path('/home/dockerfiles/')
 host = 'root@localhost'
 port = '2200'
+default_mirror = 'https://mirrors.kernel.org/archlinux/$repo/os/$arch'
 
 
 def sh(cmd, **kwargs):
@@ -25,7 +26,7 @@ def ssh(cmd, **kw):
     ), **kw)
 
 
-def build_base():
+def build_base(mirror):
     import requests
 
     cwd = root / 'base'
@@ -33,6 +34,8 @@ def build_base():
     for name in ('mkimage-arch.sh', 'mkimage-arch-pacman.conf'):
         body = requests.get(url + name).text
         if name == 'mkimage-arch.sh':
+            if mirror:
+                body = re.sub(re.escape(default_mirror), mirror, body)
             body = re.sub(
                 r'(docker run.*)archlinux',
                 r'\g<1>--rm archlinux',
@@ -91,13 +94,13 @@ def general(local=False, dot=False, keys=''):
 
     if dot:
         run(
-            'pacman --noconfirm -Sy python-requests &&'
+            'pacman --noconfirm -Sy git python-requests &&'
             '([ -d {path} ] || mkdir {path}) &&'
             'cd {path} &&'
             '([ -d .git ] ||'
             '   git clone https://github.com/naspeh/dotfiles.git .'
             ') &&'
-            'git pull && ./manage.py init --boot vim zsh bin'
+            'git pull && ./manage.py init --boot all-shell'
             .format(path='/home/dotfiles')
         )
 
@@ -144,7 +147,9 @@ def main(argv=None):
         p.exe = lambda f: p.set_defaults(exe=f) and p
         return p
 
-    cmd('base').exe(lambda a: build_base())
+    cmd('base')\
+        .arg('-m', '--mirror')\
+        .exe(lambda a: build_base(a.mirror))
     cmd('sshd').exe(lambda a: sh(
         'docker build -t naspeh/sshd .',
         cwd=str(root / 'sshd')
